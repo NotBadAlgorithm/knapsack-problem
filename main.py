@@ -6,7 +6,7 @@ import sys
 sys.stdin = open('input.txt')
 
 
-class BackpackItem:
+class KnapsackItem:
     """Один предмет в рюкзаке"""
 
     def __init__(self, name, size, price):
@@ -14,7 +14,7 @@ class BackpackItem:
         self.name = name
         # Для размера и ценности предмета специально используется
         # тип Decimal, чтобы более точно работать с вещественными числами,
-        # в частности находения остатка от деления на вещ. число
+        # в частности нахождения остатка от деления на вещ. число
         # Размер предмета
         self.size = Decimal(size)
         # Ценность предмета
@@ -34,14 +34,14 @@ def input_data():
         # Собираем параметры для каждого предмета (название, размер, ценность)
         name, size, price = line.split()
         # Добавляем новый предмет к остальным
-        inventory.append(BackpackItem(name, size, price))
+        inventory.append(KnapsackItem(name, size, price))
 
     # результат обработки данных от пользователя - это
     # возможная вмещаемость рюкзака и все возможные прдеметы
     return capacity, inventory
 
 
-def get_backpack_volumes(capacity, inventory):
+def get_knapsack_volumes(capacity, inventory):
     """
     Получить разбиение рюкзака на части (подрюкзаки - подобъёмы)
     capacity - ёмкость всего рюкзака
@@ -53,7 +53,7 @@ def get_backpack_volumes(capacity, inventory):
     # Множество размеров всех предметов
     # У нескольких предметов может быть один и тот же размер
     # Чтобы ускорить вычисления испольуем множество, а не список
-    sizes = set(bp_item.size for bp_item in inventory)
+    sizes = set(ks_item.size for ks_item in inventory)
     # Также к множеству всех размеров нужно добавить размер всего рюкзака
     # Так как дальше будет строится таблица
     # от минимальноного подрюкака до общего
@@ -86,16 +86,16 @@ def get_backpack_volumes(capacity, inventory):
     # создадим массив подрюкзаков
     # int(...) преоббразует Decimal к типу int
     # это нужно для функции range, которая принимает только целые числа
-    bp_volumes = [i*step for i in range(1, int(capacity / step)+1)]
+    ks_volumes = [i*step for i in range(1, int(capacity / step)+1)]
 
     # И возвращаем все подобъёмы нашего рюкзака
-    return bp_volumes
+    return ks_volumes
 
 
 def find_optimal_set(capacity, inventory):
     """Найти оптимальный набор предметов"""
     # Размеры подрюкзаков - массив чисел Decimal
-    bp_volumes = get_backpack_volumes(capacity, inventory)
+    ks_volumes = get_knapsack_volumes(capacity, inventory)
 
     # Заготовка для таблицы с вычислениями
     # К ечейки таблицы будем обращаться так tab[i, volume]
@@ -114,7 +114,7 @@ def find_optimal_set(capacity, inventory):
     # Обходим все строки таблицы
     for i, item in enumerate(inventory):
         # Обходим столбцы текущей строки
-        for volume in bp_volumes:
+        for volume in ks_volumes:
             # Находим предыдущий максимум
             before_max = tab[i-1, volume]['price']
             # Находим возможный новый максимум
@@ -145,21 +145,21 @@ def find_optimal_set(capacity, inventory):
                 # Ценность подрюкзака - ценость нового максимума
                 tab[i, volume]['price'] = new_max
 
-                # набор предметов - предметы из оставшегося пустого пространства
+                # набор предметов - текущий предмет
+                tab[i, volume]['items'].append(i)
+                # + предметы из оставшегося пустого пространства
                 empty_items = tab[i-1, volume-item.size]['items']
                 tab[i, volume]['items'].extend(empty_items)
-                # + текущий предмет
-                tab[i, volume]['items'].append(i)
 
     # В самом последней ячейки таблицы будет оптимальный набор предметов
     # с суммарной максимальной стоимостью
     # Индексы оптимальных предметов
-    index_bp_set = tab[len(inventory)-1, bp_volumes[-1]]['items']
+    index_ks_set = tab[len(inventory)-1, ks_volumes[-1]]['items']
 
-    return index_bp_set
+    return index_ks_set
 
 
-def output_results(capacity, inventory, index_bp_set):
+def output_results(capacity, inventory, index_ks_set):
     """Вывод результатов"""
     # Итоговая ценность
     score = Decimal('0')
@@ -170,7 +170,7 @@ def output_results(capacity, inventory, index_bp_set):
     print(f'\t{"Предмет":^10}| размер | ценность |')
     print('-'*40)
     # Строки с предметами
-    for i in index_bp_set:
+    for i in index_ks_set:
         # Получаем предмет из инвенторя
         item = inventory[i]
         print(f'\t{item.name:<10}|{item.size:>8}|{item.price:>10}|')
@@ -188,9 +188,9 @@ def main():
     capacity, inventory = input_data()
     # Решаем задачу, получая набор предметов,
     # что в сумме дадут максимальную ценность
-    index_bp_set = find_optimal_set(capacity, inventory)
+    index_ks_set = find_optimal_set(capacity, inventory)
     # Выводим результаты
-    output_results(capacity, inventory, index_bp_set)
+    output_results(capacity, inventory, index_ks_set)
 
 
 # Стартовая точка запуска программы
